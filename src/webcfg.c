@@ -202,10 +202,18 @@ void *WebConfigMultipartTask(void *status)
 		{
 			if(maintenance_doc_sync == 1 && checkMaintenanceTimer() == 1 )
 			{
-				WebcfgInfo("Maintenance window started. set maintenanceSync to true\n");
-				set_maintenanceSync(true);
+
 				char *ForceSyncDoc = NULL;
 				char* ForceSyncTransID = NULL;
+				getForceSync(&ForceSyncDoc, &ForceSyncTransID);
+				//Added to handle RDKB-55566 - force sync and maintanence sync happened together.
+				if(ForceSyncTransID !=NULL)
+			        {
+			  		WebcfgInfo("Ignoring Force sync ..proceeding with maintanence sync.\n");
+			  		setForceSync("", "", 0);
+			        }
+			        WebcfgInfo("Maintenance window started. set maintenanceSync to true\n");
+				set_maintenanceSync(true);
 				getForceSync(&ForceSyncDoc, &ForceSyncTransID);
 				if((ForceSyncDoc == NULL) && (ForceSyncTransID == NULL) && (!forced_sync) && (!get_bootSync()))
 				{
