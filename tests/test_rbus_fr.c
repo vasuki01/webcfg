@@ -1667,10 +1667,10 @@ void test_eventReceiveHandler()
 	sleep(2);
 	printf("get_global_interface(): %s\n",get_global_interface());
 	CU_ASSERT_STRING_EQUAL(get_global_interface(),"eth2");
-	rbus_unregDataElements(handle, 1, wanMgrRbusDataElements);
-	rbus_close(handle);
 	rbusEvent_Unsubscribe(rbus_handle,WEBCFG_INTERFACE_PARAM);	
-	webpaRbus_Uninit();		
+	webpaRbus_Uninit();
+	rbus_unregDataElements(handle, 1, wanMgrRbusDataElements);
+	rbus_close(handle);		
 }
 #endif
 
