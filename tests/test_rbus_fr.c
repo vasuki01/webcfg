@@ -1566,7 +1566,7 @@ void test_subscribeTo_CurrentActiveInterface_Event()
         sleep(1);
 	rbusEvent_Unsubscribe(rbus_handle,WEBCFG_INTERFACE_PARAM);	
 	webpaRbus_Uninit();
-	rbusError_t result = rbus_unregDataElements(handle, 1, webcfgInterfaceElement);
+	rbus_unregDataElements(handle, 1, webcfgInterfaceElement);
 	rbus_close(handle);
 }
 
