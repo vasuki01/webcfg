@@ -1750,7 +1750,7 @@ void test_sendNotification_rbus()
 	}
 	
 	sendNotification_rbus(payload, source, destination);
-
+        rbusEvent_Unsubscribe(handle,WEBCFG_UPSTREAM_EVENT);
 	rbus_close(handle);
 	webpaRbus_Uninit();
 }
