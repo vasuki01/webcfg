@@ -273,7 +273,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		{
 			//Replace {mac} string from default init url with actual deviceMAC
 			WebcfgDebug("replaceMacWord to actual device mac\n");
-			webConfigURL = replaceMacWord(configURL, c, get_deviceMAC());
+			webConfigURL = replaceMacWord(configURL, c, /*get_deviceMAC()*/ NULL);
 			if(get_global_supplementarySync() == 0)
 			{
 				rc = Set_Webconfig_URL(webConfigURL);
@@ -2268,34 +2268,73 @@ char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW)
 {
 	char *result = NULL;
 	int i, cnt = 0;
-
-	if(deviceMACW != NULL)
+	int maxRetryTime = 31;
+        int backoffRetryTime = 0;
+        int c = 2;
+        char deviceMAC[32] = { '\0' };
+        if(deviceMACW == NULL)
+        {
+        	while(1) 
+        	{
+        		if (backoffRetryTime < maxRetryTime)
+               	{
+                  		backoffRetryTime = (int)pow(2, c) - 1;
+               	}
+               	
+               	const char *fetchedMAC = get_deviceMAC();
+               	if(fetchedMAC != NULL)
+               	{
+                 		WebcfgInfo("Mac fetched is %s", fetchedMAC);
+                 		strncpy(deviceMAC, fetchedMAC, sizeof(deviceMAC) - 1);
+                 		break;
+              	 	}
+               	WebcfgError("Unable to get MAC Address. Retrying...\n");
+	      	 	WebcfgInfo("New backoffRetryTime value calculated as %d seconds\n", backoffRetryTime);
+               	sleep(backoffRetryTime);
+               	c++;
+               	if (backoffRetryTime >= maxRetryTime)
+               	{
+                    		WebcfgError("BackoffRetryTime reached max value and Unable to get MACAdress\n");
+		    		return NULL;
+               	}
+        	}
+        }
+	else
 	{
-		int deviceMACWlen = strlen(deviceMACW);
-		int macWlen = strlen(macW);
-		// Counting the number of times mac word occur in the string
-		for (i = 0; s[i] != '\0'; i++)
+		WebcfgInfo("deviceMACW is not NULL\n");
+	        strncpy(deviceMAC, deviceMACW, sizeof(deviceMAC) - 1);
+	}
+	
+	int deviceMAClen = strlen(deviceMAC);
+	int macWlen = strlen(macW);
+	// Counting the number of times mac word occur in the string
+	for (i = 0; s[i] != '\0'; i++)
+	{
+		if (strstr(&s[i], macW) == &s[i])
 		{
-			if (strstr(&s[i], macW) == &s[i])
-			{
-			    cnt++;
-			    // Jumping to index after the mac word.
-			    i += macWlen - 1;
-			}
+	       	 cnt++;
+			 // Jumping to index after the mac word.
+			 i += macWlen - 1;
 		}
+	}
 
-		result = (char *)malloc(i + cnt * (deviceMACWlen - macWlen) + 1);
-		i = 0;
-		while (*s)
+	result = (char *)malloc(i + cnt * (deviceMAClen - macWlen) + 1);
+	if (result == NULL) {
+           WebcfgError("Memory allocation for result failed.\n");
+           return NULL;
+    	}
+	i = 0;
+	while (*s)
+	{
+		if (strstr(s, macW) == s)
 		{
-			if (strstr(s, macW) == s)
-			{
-				strcpy(&result[i], deviceMACW);
-				i += deviceMACWlen;
-				s += macWlen;
-			}
-			else
-			    result[i++] = *s++;
+			strcpy(&result[i], deviceMAC);
+			i += deviceMAClen;
+			s += macWlen;
+		}
+		else
+		{
+			 result[i++] = *s++;
 		}
 		result[i] = '\0';
 	}
